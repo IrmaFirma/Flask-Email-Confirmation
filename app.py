@@ -1,4 +1,3 @@
-from http.client import INTERNAL_SERVER_ERROR
 from flask import Flask, request, url_for
 from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired
@@ -26,20 +25,26 @@ def index():
     #send email
     msg = Message('Confirm Email', sender='irma.preldzic9@gmail.com', recipients=[email])
     link = url_for('confirm_email', token=token, _external=True)
-    msg.body = 'Your link is {}'.format(link)
+    msg.body = 'Please confirm email by clicking on this link. Your confirmation link is {}'.format(link)
     mail.send(msg)
 
-    return 'The mail is {}. The token is {}'.format(email, token)
+    return 'A confirmation email has been sent on this {} email address.'.format(email)
 
 #3 step: building a route for token handling
 #TODO: Expired token error handling
 @app.route('/confirm_email/<token>')
 def confirm_email(token):
     try:
-        email = s.loads(token, salt='email-confirm', max_age=60)
+        email = s.loads(token, salt='email-confirm', max_age=600)
     except SignatureExpired:
-        return 'Link expired'
-    return 'Token works!'
+        return 'Your link has expired. Try to submit your email again!'
+
+    #send reply email
+    msg1 = Message('Email Confirmed!', sender='irma.preldzic9@gmail.com', recipients=[email])
+    msg1.body = 'Your email has been confirmed! Thank you.'
+    mail.send(msg1)
+
+    return 'Email has been confirmed. A reply message has been sent to your email address.'
 
 if __name__ == '__main__':
     app.run(debug=True)
